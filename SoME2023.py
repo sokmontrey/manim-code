@@ -1,4 +1,5 @@
 from manim import *
+import random
 
 CWHITE = "#fdfcdc"
 CBLUE = "#008aab"
@@ -176,10 +177,10 @@ class NothingSpecific(Scene):
     def construct(self):
         setup(self)
 
-        t1 = MathTex(r"f(x)", color=CWHITE ,font_size=60).shift(DOWN)
-        t2 = MathTex(r"f(x_1, x_2)", color=CWHITE ,font_size=60).shift(DOWN)
-        t3 = MathTex(r"f(x_1, x_2, x_3)", color=CWHITE ,font_size=60).shift(DOWN)
-        t4 = MathTex(r"f(x_1, x_2, x_3, ..., x_n)", color=CWHITE ,font_size=60).shift(DOWN)
+        t1 = MathTex(r"f(x)", color=CWHITE ,font_size=60).shift(RIGHT * 4)
+        t2 = MathTex(r"f(x_1, x_2)", color=CWHITE ,font_size=60).shift(RIGHT * 4)
+        t3 = MathTex(r"f(x_1, x_2, x_3)", color=CWHITE ,font_size=60).shift(RIGHT * 4)
+        t4 = MathTex(r"f(x_1, x_2, x_3, ..., x_n)", color=CWHITE ,font_size=60).shift(RIGHT * 4)
 
         self.play(Write(t1))
         self.wait()
@@ -199,15 +200,15 @@ class NothingSpecific2(Scene):
         (d3, l3) = create_nn([3, 4, 4, 2], 0.2, dot_color=CBLUE)
         (d4, l4) = create_nn([5, 6, 6, 6, 6, 2], 0.2, dot_color=CBLUE)
 
-        d1.shift(UP)
-        d2.shift(UP)
-        d3.shift(UP).scale(0.8)
-        d4.shift(UP).scale(0.6)
+        d1.shift(LEFT * 4)
+        d2.shift(LEFT * 4)
+        d3.shift(LEFT * 4).scale(0.8)
+        d4.shift(LEFT * 4).scale(0.6)
 
-        l1.shift(UP)
-        l2.shift(UP)
-        l3.shift(UP).scale(0.8)
-        l4.shift(UP).scale(0.6)
+        l1.shift(LEFT * 4)
+        l2.shift(LEFT * 4)
+        l3.shift(LEFT * 4).scale(0.8)
+        l4.shift(LEFT * 4).scale(0.6)
 
         t = Text("...", font=FONT_R, color=CBLUE, font_size=20).move_to(d4[0][1]).rotate(PI/2)
 
