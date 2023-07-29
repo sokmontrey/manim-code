@@ -1,10 +1,12 @@
 from manim import *
+import numpy as np
 import random
 
 CWHITE = "#fdfcdc"
 CBLUE = "#008aab"
 CBLUE2 = "#00afb9"
 CRED = "#f07167"
+CGREEN = "#49de64"
 CBLACK = "#171d23"
 
 FONT_R = "JetBrainsMono Nerd Font"
@@ -37,8 +39,8 @@ def create_nn(layer, r=0.2, vs = 1, hs = 0.7, line_color=CBLUE, dot_color=CWHITE
 
     l = VGroup()
     for I in range(len(layer)-1):
-        for i in range(len(d[I])):
-            for j in range(len(d[I+1])):
+        for i in range(len(d[I])-1, -1, -1):
+            for j in range(len(d[I+1])-1, -1, -1):
                 l.add(Line(d[I][i], d[I+1][j], color=line_color,stroke_opacity=line_opacity)) 
 
     return (d,l)
@@ -222,4 +224,197 @@ class NothingSpecific2(Scene):
         self.play(Transform(d1, d4), Transform(l1, l4))
 
         self.wait(2)
+
+def create_matrix(a, b):
+    elements = np.arange(a * b)
+    matrix = elements.reshape((a, b)).T
+
+    return matrix.flatten()
+
+class ToCalculateThisOutputNode(Scene):
+    def construct(self):
+        setup(self)
+
+        (d, l) = create_nn([5, 6, 6, 6, 6, 2], 0.1)
+
+        l2 = l.copy()
+        l3 = VGroup()
+
+        l3.add(*[l2[i] for i in create_matrix(5,6)])
+        l3.add(*[l2[i+30] for i in create_matrix(6,6)])
+        l3.add(*[l2[i+66] for i in create_matrix(6,6)])
+        l3.add(*[l2[i+102] for i in create_matrix(6,6)])
+        l3.add(*[l2[i+138] for i in create_matrix(6,2) if i % 2 == 0])
+
+        t = Text("...", font=FONT_R, color=CWHITE, font_size=30).move_to(d[0][1]).rotate(PI/2)
+
+        d[0][1] = t
+        self.add(l, d)
+
+        self.play(
+            d[0].animate.set_color("#4d5c6b"),
+            d[1].animate.set_color("#4d5c6b"),
+            d[2].animate.set_color("#4d5c6b"),
+            d[3].animate.set_color("#4d5c6b"),
+            d[4].animate.set_color("#4d5c6b"),
+            d[5][0].animate.set_color("#4d5c6b"),
+            # l.animate.set_color("#2d3740"),
+            Uncreate(l)
+            )
+
+        self.play(ScaleInPlace(d[5][1], scale_factor=1.7))
+
+        self.wait(1)
+
+        self.play(
+            d[0].animate.set_color("#fdfcdc"),
+                )
+
+        self.play(
+                Create(l3),
+                d[1].animate.set_color("#fdfcdc"),
+                d[2].animate.set_color("#fdfcdc"),
+                d[3].animate.set_color("#fdfcdc"),
+                d[4].animate.set_color("#fdfcdc"),
+                run_time=4
+                )
+
+        self.wait(2)
+
+class ToFindThisNode(Scene):
+    def construct(self):
+        setup(self)
+
+        (d, l) = create_nn([5, 6, 6, 6, 6, 2], 0.1)
+
+        l2 = l.copy()
+        l3 = VGroup()
+
+        l3.add(*[l2[i] for i in create_matrix(5,6)])
+        l3.add(*[l2[i+30] for i in create_matrix(6,6)])
+        l3.add(*[l2[i+66] for i in create_matrix(6,6)])
+        l3.add(*[l2[i+102] for i in create_matrix(6,6)])
+        l3.add(*[l2[i+138] for i in create_matrix(6,2) if i % 2 == 0])
+
+        t = Text("...", font=FONT_R, color=CWHITE, font_size=30).move_to(d[0][1]).rotate(PI/2)
+
+        d[0][1] = t
+
+        prev = d[2]
+        this = d[3][3]
+        conn = l3[66 + 12:102 - 18]
+
+        self.add(l3, d)
+
+        self.wait(2)
+
+        self.play(
+            d.animate.set_color("#323b45"),
+            l3.animate.set_color("#2d3740")
+        )
+        self.play(
+            this.animate.set_color("#fdfcdc")
+        )
+
+        self.wait(2)
+
+        self.play(
+            prev.animate.set_color("#00afb9"),
+            conn.animate.set_color("#f07167")
+        )
+
+        ng = VGroup(prev.copy(), this.copy(), conn.copy())
+        self.add(ng)
+
+        self.wait(2)
+        self.play(FadeOut(l3), FadeOut(d), ng.animate.move_to([-4.3,0,0]))
+        self.wait(2)
+
+        prev = ng[0]
+        conn = ng[2]
+        this = ng[1]
+
+        lab1 = Text(" (hidden layer 3)", font=FONT_R, color=CBLUE , font_size=14).next_to(ng, LEFT)
+        lab2 = Text(" (weight layer 3)", font=FONT_R, color=CRED, font_size=14).next_to(conn, RIGHT)
+        lab3 = Text(" (hidden layer 4)", font=FONT_R, color=CWHITE, font_size=14).next_to(this, RIGHT)
+
+        ll1 = MathTex("i", color=CBLUE).next_to(lab1, DOWN)
+        ll2 = MathTex("w", color=CRED).next_to(lab2, DOWN)
+        ll3 = MathTex("output", color=CWHITE).next_to(lab3, UP).scale(0.8)
+
+        self.play(
+                Write(lab1),
+                Write(lab2),
+                Write(lab3),
+                Write(ll1),
+                Write(ll2),
+                Write(ll3)
+                )
+
+        self.wait(2)
+
+        eq1 = MathTex(
+                "i_{1}", 
+                "w_{1}", 
+                "+",
+                "i_{2}", 
+                "w_{2}", 
+                "+",
+                "i_{3}", 
+                "w_{3}", 
+                "+",
+                "i_{4}", 
+                "w_{4}", 
+                "+",
+                "i_{5}", 
+                "w_{5}", 
+                "+",
+                "i_{6}", 
+                "w_{6}", 
+                "+",
+                "b"
+                ).scale(0.6)
+        eq1.move_to([3.4,1,0])
+
+        mm = create_matrix(6, 3)
+        for i in range(6):
+            eq1[mm[i]].set_color("#00afb9")
+        for i in range(6, 12):
+            eq1[mm[i]].set_color(CRED)
+        for i in range(12, 18):
+            eq1[mm[i]].set_color("#839096")
+        eq1[18].set_color(CGREEN)
+
+        z = MathTex(r"z \; = \;").set_color(CGREEN).scale(0.6).next_to(eq1, LEFT)
+
+        eq2 = MathTex("output\;=\;", "\sigma (", "z", ")").set_color(CWHITE).move_to([0.7, 0, 0]).scale(0.6)
+        eq2[2].set_color(CGREEN)
+
+        arr = MathTex(r"\big\uparrow", color=CWHITE, font_size=18).next_to(eq2[1], DOWN)
+        act_func = Text("(Activation Function)", font=FONT_R, color=CWHITE, font_size=15).next_to(arr, DOWN)
+
+        for i in range(6):
+            self.play(Create(eq1[mm[i]]), run_time=0.1)
+        for i in range(6, 12):
+            self.play(Create(eq1[mm[i]]), run_time=0.1)
+
+        self.wait(1)
+
+        for i in range(12, 17):
+            self.play(Create(eq1[mm[i]]), run_time=0.1)
+
+        self.wait(2)
+        self.play(Create(eq1[mm[17]]), Create(eq1[18]), run_time=0.1)
+        self.wait(1)
+        self.play(Create(z), run_time=0.5)
+        self.wait(2)
+
+        self.play(Create(eq2[1]), Create(eq2[2]), Create(eq2[3]))
+        self.wait()
+        self.play(Create(arr), Create(act_func))
+        self.wait()
+        self.play(Create(eq2[0]))
+        self.wait(2)
+
+
 
