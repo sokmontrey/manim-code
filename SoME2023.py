@@ -393,6 +393,9 @@ class ToFindThisNode(Scene):
         arr = MathTex(r"\big\uparrow", color=CWHITE, font_size=18).next_to(eq2[1], DOWN)
         act_func = Text("(Activation Function)", font=FONT_R, color=CWHITE, font_size=15).next_to(arr, DOWN)
 
+        arr2 = MathTex(r"\big\uparrow", color=CWHITE, font_size=18).next_to(eq1[18], DOWN)
+        bias = Text("(Bias)", font=FONT_R, color=CGREEN, font_size=14).next_to(arr2, DOWN)
+
         for i in range(6):
             self.play(Create(eq1[mm[i]]), run_time=0.1)
         for i in range(6, 12):
@@ -404,7 +407,7 @@ class ToFindThisNode(Scene):
             self.play(Create(eq1[mm[i]]), run_time=0.1)
 
         self.wait(2)
-        self.play(Create(eq1[mm[17]]), Create(eq1[18]), run_time=0.1)
+        self.play(Create(eq1[mm[17]]), Create(eq1[18]), Create(arr2), Create(bias), run_time=0.1)
         self.wait(1)
         self.play(Create(z), run_time=0.5)
         self.wait(2)
@@ -416,5 +419,45 @@ class ToFindThisNode(Scene):
         self.play(Create(eq2[0]))
         self.wait(2)
 
+class BiasIsThere(Scene):
+    def construct(self):
+        setup(self)
 
+        eq = MathTex(r"output = \sigma(", "input", "\cdot","weight", "+","bias",")", color=CWHITE)
+        eq.move_to([0,2.5,0])
+        eq[1].set_color(CBLUE)
+        eq[3].set_color(CRED)
+        eq[5].set_color(CGREEN)
+
+        ax = Axes(
+            x_range=[-5, 5, 1],
+            y_range=[-2, 2, 1],
+            tips=False,
+            axis_config={
+                "include_numbers": False,
+                "color": "#3e4d5c",
+            },
+        )
+
+        def func(x):
+            return ((np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x)))
+
+        # graph = ax.plot(lambda x: ((np.exp(x) - np.exp(-x)) / (np.exp(x) + np.exp(-x))) + b.get_value(), x_range=[-5, 5], color=CWHITE, use_smoothing=True)
+        graph = ax.plot(func, x_range=[-5, 5], color=CWHITE)
+
+        g = VGroup(ax, graph)
+        g.move_to([0,-1,0])
+        g.scale(0.7)
+
+        arr = MathTex(r"\big\uparrow", color=CWHITE, font_size=18).next_to(eq[5], DOWN)
+        bv = DecimalNumber(0.0, font_size=20, color=CGREEN).next_to(arr, DOWN)
+
+        self.play(Create(eq), Create(ax), run_time=1.3)
+        self.play(Create(graph), Create(arr), Create(bv),run_time=2)
+
+        self.wait(1)
+        self.play(graph.animate.move_to([0.87,-1,0]), ChangeDecimalToValue(bv, 1), run_time=1.5)
+        self.play(graph.animate.move_to([-0.87,-1,0]), ChangeDecimalToValue(bv, -1),run_time=1.5)
+        self.play(graph.animate.move_to([0,-1,0]), ChangeDecimalToValue(bv, 0), run_time=1.5)
+        self.wait(2)
 
