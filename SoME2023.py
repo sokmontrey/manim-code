@@ -901,3 +901,136 @@ class WrongPrediction(Scene):
         self.wait()
         self.play(Create(t1), Create(t2), Create(b2), Create(tar), Create(but))
         self.wait(2)
+
+def LB(color=CWHITE):
+    return MathTex(r"\left[\begin{matrix} \, \\ \, \end{matrix}\right.", color=color)
+def RB(color=CWHITE):
+    return MathTex(r"\left.\begin{matrix} \, \\ \, \end{matrix}\right]", color=color)
+def M(t1, t2, color=CWHITE):
+    return MathTex(r"\begin{matrix}" + t1 + r"\\" + t2 + r"\end{matrix}", color=color)
+def HL(obj, color):
+    return obj.animate.set_color(color).set_opacity(1)
+
+class WillUseMSE(Scene):
+    def construct(self):
+        setup(self)
+
+        mse = CText("Mean Squared Error (MSE)", color=CWHITE).scale(1.3)
+        f = MathTex(r"E(y, \hat{y}) = ", 
+                    r"\frac{1}{n}", 
+                    r"\sum_{i=1}^n", 
+                    r"(", 
+                    r"y_i-", 
+                    r"\hat{y}_i", 
+                    ")^2", color=CWHITE)
+
+        self.wait()
+        self.play(Write(mse), run_time=0.8)
+        self.play(mse.animate.move_to([0, 3.1, 0]))
+        self.play(Create(f))
+        self.wait()
+        self.play(f.animate.move_to([0, 1.8, 0]).set_opacity(0.4).scale(0.6))
+
+        eq1 = VGroup(LB(), M("0.8", "0.2"), RB()).arrange(RIGHT)
+        eq2 = VGroup(LB(CGREEN), M("0", "1", CGREEN), RB(CGREEN)).arrange(RIGHT)
+        minus = MathTex("-", color=WHITE)
+        minus2 = M("-", "-", CWHITE)
+
+        eq1.next_to(minus, LEFT, buff=0.5)
+        eq2.next_to(minus, RIGHT, buff=0.5)
+
+        pre = Label("prediction", eq1, DOWN, color=CWHITE)
+        tar = Label("target", eq2, DOWN, color=CGREEN)
+
+        self.play(Create(eq1), Create(eq2), Create(tar), Create(pre))
+        self.wait()
+        self.play(Uncreate(pre), Uncreate(tar))
+        self.wait()
+        self.play(Create(minus), HL(f[4], CWHITE), HL(f[5], CGREEN))
+        self.wait()
+        self.play(FadeOut(minus), FadeOut(eq2[0]), Transform(eq1[2], minus2))
+
+        open_b = M("(", "(", CBLUE)
+        close_b = M(")^2", ")^2", CBLUE)
+
+        self.wait()
+        self.play(
+                eq1[1].animate.next_to(minus2, LEFT, buff=0.3),
+                eq2[1].animate.next_to(minus2, RIGHT, buff=0.3))
+
+        open_b.next_to(eq1[1], LEFT, buff=0.3)
+        close_b.next_to(eq2[1], RIGHT, buff=0.3)
+
+        self.play(Create(open_b), Create(close_b), HL(f[3], CBLUE), HL(f[6], CBLUE))
+
+        plus = MathTex(r"+", color=CRED).next_to(open_b, LEFT)
+
+        self.play(FadeOut(eq1[0]), FadeOut(eq2[2]))
+        self.wait()
+        self.play(Create(plus), HL(f[2], CRED))
+
+        eq3 = VGroup(
+                MathTex("(", color=CBLUE),
+                MathTex("0.8", color=CWHITE),
+                MathTex("-", color=CWHITE),
+                MathTex("0", color=CGREEN),
+                MathTex(")^2", color=CBLUE),
+            ).arrange(RIGHT, buff=0.3)
+
+        eq4 = VGroup(
+                MathTex("(", color=CBLUE),
+                MathTex("0.2", color=CWHITE),
+                MathTex("-", color=CWHITE),
+                MathTex("1", color=CGREEN),
+                MathTex(")^2", color=CBLUE),
+            ).arrange(RIGHT, buff=0.3)
+
+        geq = VGroup(eq3, eq4).arrange(DOWN, buff=0.15)
+
+        plus2 = MathTex("+", color=CRED)
+
+        self.wait()
+        self.play(
+                Transform(plus, plus2), 
+                Create(geq),
+                eq3.animate.next_to(plus2, LEFT),
+                eq4.animate.next_to(plus2, RIGHT),
+                FadeOut(eq1[1]), 
+                FadeOut(eq2[1]), 
+                FadeOut(eq1[2]),
+                FadeOut(open_b),
+                FadeOut(close_b),
+                )
+
+        frac = Line([-3.2, -0.4, 0], [3.2, -0.4, 0], color=CWHITE)
+        deno = MathTex("2", color=CWHITE).next_to(frac, DOWN, buff=0.2)
+
+        self.wait()
+        self.play(Create(frac), Create(deno), HL(f[1], CWHITE))
+
+        re = MathTex(r"= 0.64", color=CRED)
+        re.next_to(frac, RIGHT, buff=0.2)
+
+        self.wait()
+        self.play(Create(re), HL(f[0], CRED))
+
+        self.wait(2)
+
+        self.play(
+                FadeOut(frac),
+                FadeOut(deno),
+                FadeOut(eq3),
+                FadeOut(eq4),
+                FadeOut(plus),
+                FadeOut(f),
+                )
+
+        err = MathTex(r"E", color=CRED).move_to([-0.8, 0,0])
+        self.play(Create(err), re.animate.next_to(err, RIGHT, buff=0.2))
+
+        sca = Label("A single scalar value", re, DOWN)
+        self.wait()
+        self.play(Create(sca))
+
+        self.wait(2)
+
