@@ -12,13 +12,13 @@ CBLACK = "#171d23"
 FONT_R = "JetBrainsMono Nerd Font"
 FONT_SIZE = 18
 
-def CreateBox(self, tb):
+def CreateBox(self, tb, run_time=1):
     center = tb.get_center()
-    circle = RoundedRectangle(width=0.01, height=0.01, corner_radius=0.01, color=tb[0].get_color())
+    circle = RoundedRectangle(width=0.01, height=0.01, corner_radius=0.01, color=tb[0].get_color()).move_to(center)
 
     self.add(circle)
-    self.play(ReplacementTransform(circle, tb[0]))
-    self.play(Create(tb[1]))
+    self.play(ReplacementTransform(circle, tb[0]), run_time=run_time/2)
+    self.play(Create(tb[1]), run_time=run_time/2)
 
 def Panel(obj, color=CWHITE, corner=0.2):
     return SurroundingRectangle(obj, color=color, buff=0.2, corner_radius=corner)
@@ -64,7 +64,7 @@ def ArrowFrom(obj, direction, color=CWHITE):
     return arr
 
 def Label(text, obj, direction, color=CWHITE, text_size=FONT_SIZE, oppo=False):
-    arr = CArrow(direction, color, oppo).next_to(obj, direction, 0.8)
+    arr = CArrow(direction, color, oppo).next_to(obj, direction, 0.2)
     t = CText(text, color, text_size).next_to(arr, direction)
 
     return VGroup(arr, t)
@@ -511,8 +511,8 @@ class BiasIsThere(Scene):
         self.play(Create(graph), Create(arr), Create(bv),run_time=2)
 
         self.wait(1)
-        self.play(graph.animate.move_to([0.87,-1,0]), ChangeDecimalToValue(bv, 1), run_time=1.5)
-        self.play(graph.animate.move_to([-0.87,-1,0]), ChangeDecimalToValue(bv, -1),run_time=1.5)
+        self.play(graph.animate.move_to([-0.87,-1,0]), ChangeDecimalToValue(bv, 1), run_time=1.5)
+        self.play(graph.animate.move_to([0.87,-1,0]), ChangeDecimalToValue(bv, -1),run_time=1.5)
         self.play(graph.animate.move_to([0,-1,0]), ChangeDecimalToValue(bv, 0), run_time=1.5)
         self.wait(2)
 
@@ -902,10 +902,10 @@ class WrongPrediction(Scene):
         self.play(Create(t1), Create(t2), Create(b2), Create(tar), Create(but))
         self.wait(2)
 
-def LB(color=CWHITE):
-    return MathTex(r"\left[\begin{matrix} \, \\ \, \end{matrix}\right.", color=color)
-def RB(color=CWHITE):
-    return MathTex(r"\left.\begin{matrix} \, \\ \, \end{matrix}\right]", color=color)
+def LB(color=CWHITE, n=2):
+    return MathTex(r"\left[\begin{matrix} \," + (r"\\ \,") * (n-1) + r"\end{matrix}\right.", color=color)
+def RB(color=CWHITE, n=2):
+    return MathTex(r"\left.\begin{matrix} \," + (r"\\ \,") * (n-1) + r"\end{matrix}\right]", color=color)
 def M(t1, t2, color=CWHITE):
     return MathTex(r"\begin{matrix}" + t1 + r"\\" + t2 + r"\end{matrix}", color=color)
 def HL(obj, color):
@@ -1034,3 +1034,358 @@ class WillUseMSE(Scene):
 
         self.wait(2)
 
+def randomize_weight(obj, color1=CBLUE, color2=CRED):
+    for i in obj:
+        color = interpolate_color(color1, color2, random.uniform(0, 1))
+        i.set_color(color)
+        i.set_opacity(random.uniform(0.1, 1))
+
+class NewParameter(Scene):
+    def construct(self):
+        setup(self)
+
+        (d, l1) = create_nn([2, 3, 3, 2], 0.1)
+        d.move_to([0, 1, 0])
+        l1.move_to([0, 1, 0])
+
+        l1.set_opacity(1)
+        l2 = l1.copy()
+
+        err = DecimalNumber(1.0, color=CRED).scale(0.8)
+        t = VGroup(CText("Error: ", color=CRED), err).arrange(RIGHT).move_to([0,-1.5, 0])
+
+        self.add(t)
+
+        randomize_weight(l1, CBLUE, CRED)
+        self.add(d, l1)
+
+        self.wait()
+
+        randomize_weight(l2, CBLUE, CWHITE)
+        self.play(ReplacementTransform(l1, l2), ChangeDecimalToValue(err, 0.83))
+        
+        randomize_weight(l1, CGREEN, CRED)
+        self.play(ReplacementTransform(l2, l1), ChangeDecimalToValue(err, 0.66))
+
+        randomize_weight(l2, CBLUE, CRED)
+        self.play(ReplacementTransform(l1, l2), ChangeDecimalToValue(err, 0.507))
+        
+        randomize_weight(l1, CGREEN, CRED)
+        self.play(ReplacementTransform(l2, l1), ChangeDecimalToValue(err, 0.347))
+
+        randomize_weight(l2, CBLUE, CWHITE)
+        self.play(ReplacementTransform(l1, l2), ChangeDecimalToValue(err, 0.187))
+        
+        randomize_weight(l1, CGREEN, CBLUE)
+        self.play(ReplacementTransform(l2, l1), ChangeDecimalToValue(err, 0.0))
+
+        self.wait(2)
+
+class CommonWayError(Scene):
+    def construct(self):
+        setup(self)
+
+        model_b = TextBox("ANN Function", color=CBLUE)
+        error_b = TextBox("Error Function", color=CRED)
+        mid_arr = CArrow(LEFT, color=CBLUE)
+
+        VGroup(model_b, mid_arr, error_b).arrange(RIGHT).move_to([0, 2.5, 0])
+
+        inp = Label("Input", model_b, LEFT, color=CBLUE)
+        par = Label("Parameters", model_b, DOWN, color=CBLUE)
+        tar = Label("Target", error_b, DOWN, color=CGREEN)
+        err = Label("Error", error_b, RIGHT, color=CRED, oppo=True)
+
+        g = VGroup(mid_arr, inp, par, tar, err)
+
+        self.wait()
+        CreateBox(self,model_b,0.5)
+        CreateBox(self,error_b, 0.5)
+        self.play(Create(g), run_time=1)
+
+        params = MathTex("w_1", "w_2", "w_3", "...", "w_n", "b_1", "...", "b_n", color=CBLUE).scale(0.8).arrange(DOWN).next_to(par, DOWN, 0.3)
+        params[0:5].set_color(CWHITE)
+
+        one_par = params[1].copy()
+
+        self.wait()
+        self.play(Create(params))
+
+        self.wait()
+
+        self.wait()
+        self.play(one_par.animate.move_to([0, 0,0]))
+        self.play(one_par.animate.scale(1.5).set_color(CBLUE2))
+        self.wait()
+        self.play(one_par.animate.move_to(params[1].get_center()), FadeOut(params[1]))
+        # self.play(Uncreate(params), Uncreate(g), Uncreate(model_b), Uncreate(error_b))
+
+        rt = 0.15
+        self.play(inp.animate.set_color(CWHITE), run_time=rt)
+
+        self.play(model_b[0].animate.set_color(CWHITE), run_time=rt)
+        self.play(inp.animate.set_color(CBLUE), run_time=rt)
+
+        self.play(mid_arr.animate.set_color(CWHITE), run_time=rt)
+        self.play(model_b[0].animate.set_color(CBLUE), run_time=rt)
+
+        self.play(error_b[0].animate.set_color(CWHITE), run_time=rt)
+        self.play(mid_arr.animate.set_color(CBLUE), run_time=rt)
+
+        self.play(err.animate.set_color(CWHITE), run_time=rt)
+        self.play(error_b[0].animate.set_color(CRED), run_time=rt)
+
+        self.play(err.animate.set_color(CRED), run_time=rt)
+
+        new_err = Label("New Error", error_b, RIGHT, color=CWHITE, oppo=True)
+        self.play(Transform(err, new_err))
+
+        self.wait(2)
+
+class WhatToDo(Scene):
+    def construct(self):
+        setup(self)
+
+        w = MathTex(r"w_2", color=CWHITE).scale(2.5)
+        w.move_to([-3.2, 0,0])
+        arr1 = CArrow(DOWN, CGREEN).next_to(w, RIGHT)
+
+        de = MathTex(r"\Delta E", color=CRED).scale(2.5)
+        de.move_to([2.2, 0,0])
+        arr21 = CArrow(DOWN, CGREEN).next_to(de, RIGHT)
+        arr22 = CArrow(UP, CRED).next_to(de, RIGHT)
+
+        l = Label("change in error", de, DOWN, CWHITE)
+
+        mid_arr = CArrow(LEFT, CWHITE).set_opacity(0.8).shift(LEFT *0.3)
+
+        # self.play(w, arr1, de, arr21, arr22, mid_arr)
+        self.wait()
+
+        self.play(Create(w), Create(mid_arr), Create(de), Create(arr1), Create(l))
+        self.wait()
+
+        self.play(Create(arr21), l.animate.set_opacity(0.3))
+        self.wait()
+        self.play(w.animate.set_color(CRED).scale(0.7), run_time=0.9)
+        self.wait(2)
+
+        self.play(Transform(arr21, arr22), run_time=0.9)
+        self.wait(1)
+
+        self.play(w.animate.set_color(CBLUE2).scale(2), run_time=0.9)
+        self.wait(2)
+
+class BasicallyError(Scene):
+    def construct(self):
+        setup(self)
+
+        bas = CText("Basically", color=CBLUE).move_to([0, 2, 0]).scale(3)
+        eq = MathTex(r"\theta_{\texttt{new}} =", r"\theta_{\texttt{old}}", r"-", r"\Delta E", color=CRED).scale(1.5)
+        eq[0].set_color(CWHITE)
+        eq[1].set_color(CBLUE2)
+
+        l = MathTex(r"\theta: \texttt{Trainable parameters (weights and biases)}", color=CWHITE).scale(0.6).move_to([0, -2, 0])
+        l2 = MathTex(r"\Delta E:", r"\texttt{Change in Error when } \theta \texttt{ is increased by a small amount}", color=CWHITE).scale(0.6).move_to([0, -2, 0])
+        l2[0].set_color(CRED)
+        l2.next_to(l, DOWN)
+
+        self.add(bas, eq[3])
+        self.wait(2)
+        self.play(Create(eq[1]), Create(eq[2]))
+        self.wait()
+        self.play(Create(eq[0]))
+        self.play(Create(l), Create(l2))
+        self.wait(2)
+
+        but = CText("BUT!", color=CRED).scale(5)
+        self.remove(bas, eq[0], eq[1], eq[2], eq[3], l, l2)
+        self.add(but)
+        self.wait(2)
+
+def random_arr_matrix(row=3, col=3):
+    re = VGroup()
+    for i in range(row):
+        temp = VGroup()
+
+        for j in range(col):
+            if random.uniform(0, 1) > 0.5:
+                temp.add(MathTex(r"\uparrow"))
+            else:
+                temp.add(MathTex(r"\downarrow"))
+
+        temp.arrange(RIGHT)
+        re.add(temp)
+
+    re.arrange(DOWN)
+    return re
+
+def weight_matrix(row=3, col=3):
+    re = VGroup()
+    for i in range(row):
+        temp = VGroup()
+
+        for j in range(col):
+            temp.add(MathTex(r"w_{" + str(i+1) + str(j+1) + "}"))
+
+        temp.arrange(RIGHT)
+        re.add(temp)
+
+    re.arrange(DOWN, buff=0.5)
+    return re
+
+def bias_matrix(row=3, col=3):
+    re = VGroup()
+    for i in range(row):
+        temp = VGroup()
+
+        for j in range(col):
+            temp.add(MathTex(r"b_{" + str(i+1) + "}"))
+
+        temp.arrange(RIGHT)
+        re.add(temp)
+
+    re.arrange(DOWN)
+    return re
+
+def randomize_matrix(matrix, obj1, obj2):
+    v = matrix[1]
+    for i in range(len(v)):
+        for j in range(len(v[i])):
+            if random.random() > 0.5:
+                v[i][j]= obj1.copy().move_to(v[i][j].get_center())
+            else:
+                v[i][j]= obj2.copy().move_to(v[i][j].get_center())
+
+def questionize_matrix(matrix):
+    v = matrix[1]
+    for i in range(len(v)):
+        for j in range(len(v[i])):
+            v[i][j] = MathTex(r"?", color=v[i][j].get_color()).move_to(v[i][j].get_center())
+
+def randomize_scale_matrix(matrix, scale1, scale2):
+    v = matrix[1]
+    for i in range(len(v)):
+        for j in range(len(v[i])):
+            if random.random() > 0.5:
+                v[i][j].scale(scale1)
+            else:
+                v[i][j].scale(scale2)
+
+class HowMuch(Scene):
+    def construct(self):
+        setup(self)
+
+        (d, l) = create_nn([2, 3, 3 ,2], 0.2)
+        d.move_to([0, 2.1, 0]).scale(0.7).set_opacity(0.2)
+        l.move_to([0, 2.1, 0]).scale(0.7).set_color(CBLUE).set_opacity(0.3)
+
+        d2 = d.copy()
+        d2[0].set_opacity(0)
+        for i in range(1, len(d2)):
+            for j in d2[i]:
+                j.scale(0.5).set_color(CRED).set_opacity(1)
+
+        eq = MathTex(r"\theta_{\texttt{new}} =", r"\theta_{\texttt{old}}", r"-", r"\Delta E", color=CRED).scale(0.8).set_opacity(1)
+        eq[0].set_color(CWHITE)
+        eq[1].set_color(CBLUE2)
+
+        eq2 = MathTex(r"\theta_{\texttt{new}} =", r"\theta_{\texttt{old}}", r"-", r"? \Delta E", color=CRED).scale(0.8).set_opacity(1)
+        eq2[0].set_color(CWHITE)
+        eq2[1].set_color(CBLUE2)
+
+        eq.move_to([0, -2, 0])
+        eq2.move_to([0, -2, 0])
+
+        scale = 0.7
+
+        params = VGroup(
+                VGroup(
+                    LB(color=CBLUE, n=3),
+                    weight_matrix(3, 2).set_color(CBLUE).scale(scale),
+                    RB(color=CBLUE, n=3),
+                ).arrange(RIGHT, buff=0.05),
+
+                VGroup(
+                    LB(color=CRED, n=3),
+                    bias_matrix(3, 1).set_color(CRED).scale(scale),
+                    RB(color=CRED, n=3),
+                ).arrange(RIGHT, buff=0.05),
+
+                VGroup(
+                    LB(color=CBLUE, n=3),
+                    weight_matrix(3, 3).set_color(CBLUE).scale(scale),
+                    RB(color=CBLUE, n=3),
+                ).arrange(RIGHT, buff=0.05),
+
+                VGroup(
+                    LB(color=CRED, n=3),
+                    bias_matrix(3, 1).set_color(CRED).scale(scale),
+                    RB(color=CRED, n=3)
+                ).arrange(RIGHT, buff=0.05),
+
+                VGroup(
+                    LB(color=CBLUE, n=2),
+                    weight_matrix(2, 3).set_color(CBLUE).scale(scale),
+                    RB(color=CBLUE, n=2),
+                ).arrange(RIGHT, buff=0.05),
+
+                VGroup(
+                    LB(color=CRED, n=2),
+                    bias_matrix(2, 1).set_color(CRED).scale(scale),
+                    RB(color=CRED, n=2),
+                ).arrange(RIGHT, buff=0.05),
+            ).arrange(RIGHT).move_to([0, -0.5, 0])
+        
+        params2 = params.copy()
+        params3 = params2.copy()
+
+        for i in params2:
+            randomize_matrix(i, MathTex(r"\uparrow").scale(0.8).set_color(CBLUE), MathTex(r"\downarrow").scale(0.8).set_color(CRED))
+
+        for i in params3:
+            questionize_matrix(i)
+            randomize_scale_matrix(i, 0.5, 1.3)
+
+        self.add(l, d, eq, d2, params)
+        self.wait(2)
+        self.play(Transform(params, params2))
+        self.wait()
+        self.play(Transform(params, params3), Transform(eq, eq2))
+
+        p = Panel(eq2[3], CWHITE)
+        self.play(Create(p))
+        self.wait(0.5)
+        self.play(Uncreate(p))
+        self.wait(2)
+
+class LearningRate(Scene):
+    def construct(self):
+        setup(self)
+
+        eq = VGroup(
+            MathTex(r"\theta_{\texttt{new}} = ", color=CWHITE),
+            MathTex(r"\theta_{\texttt{old}}", color=CBLUE),
+            MathTex(r"-", color=CGREEN),
+            MathTex(r"\eta", color=CGREEN),
+            MathTex(r"\Delta E", color=CRED),
+        ).arrange(RIGHT)
+
+
+        self.add(eq[4])
+        self.wait(1)
+
+        eq[3].next_to(eq[4], LEFT)
+        l = Label("Learning Rate", eq[3], DOWN, color=CWHITE)
+        self.play(Create(eq[3]), Create(l))
+
+        self.wait()
+        self.play(Create(eq[1]), Create(eq[2]))
+
+        self.wait()
+        self.play(Create(eq[0]))
+
+        self.wait(2)
+
+
+        
