@@ -1,6 +1,7 @@
 from manim import *
 import numpy as np
 import random
+import math
 
 CWHITE = "#fdfcdc"
 CBLUE = "#008aab"
@@ -20,7 +21,7 @@ def CreateBox(self, tb, run_time=1):
     self.play(ReplacementTransform(circle, tb[0]), run_time=run_time/2)
     self.play(Create(tb[1]), run_time=run_time/2)
 
-def Panel(obj, color=CWHITE, corner=0.2):
+def Panel(obj, color=CWHITE, corner=0.15):
     return SurroundingRectangle(obj, color=color, buff=0.2, corner_radius=corner)
 
 def CText(text, color=CWHITE, font_size=FONT_SIZE):
@@ -28,7 +29,10 @@ def CText(text, color=CWHITE, font_size=FONT_SIZE):
     return t
 
 def TextBox(text,color=CBLUE,text_color=CWHITE, text_size=FONT_SIZE, fill_opacity=1, corner=0):
-    t = CText(text, text_color, text_size)
+    if isinstance(text, str):
+        t = CText(text, text_color, text_size)
+    else:
+        t = text.set_color(text_color)
     box = SurroundingRectangle(t, fill_opacity=fill_opacity, color=color, buff=0.2, corner_radius=corner)
     return VGroup(box, t)
 
@@ -65,7 +69,10 @@ def ArrowFrom(obj, direction, color=CWHITE):
 
 def Label(text, obj, direction, color=CWHITE, text_size=FONT_SIZE, oppo=False):
     arr = CArrow(direction, color, oppo).next_to(obj, direction, 0.2)
-    t = CText(text, color, text_size).next_to(arr, direction)
+    if isinstance(text, str):
+        t = CText(text, color, text_size).next_to(arr, direction) 
+    else:
+        t = text.set_color(color).next_to(arr, direction) 
 
     return VGroup(arr, t)
 
@@ -1387,5 +1394,633 @@ class LearningRate(Scene):
 
         self.wait(2)
 
+class Derivative(Scene):
+    def construct(self):
+        setup(self)
+
+        f = VGroup(
+            VGroup(
+                MathTex(r"d"),
+                MathTex(r"\frac{\;\;\;\;}{\;\;\;\;}"),
+                MathTex(r"d", r"x")
+            ).arrange(DOWN, buff=0.1).set_color(CWHITE),
+            MathTex(r"f(", color=CWHITE),
+            MathTex(r"x", color=CBLUE),
+            MathTex(r")", color=CWHITE),
+        ).arrange(RIGHT, buff=0.1)
+        f[0][2][1].set_color(CBLUE)
+
+        d = CText("Derivative", color=CBLUE).move_to([0, 3, 0])
+
+        l1 = Label("Derivative of f(x)", f[0][0], UP, color=CWHITE)
+        l2 = Label("With respect to ", f[0][2][0], DOWN, color=CWHITE)
+        l2x = MathTex(r"x", color=CBLUE)
+        l2x.next_to(l2[1], RIGHT)
+
+        self.add(f[1], f[2], f[3])
+
+        self.wait()
+        self.play(Create(d))
+
+        self.wait()
+        self.play(Create(f[0][0]), Create(f[0][1]), Create(f[0][2][0]))
+        self.play(Create(f[0][2][1]))
+        self.wait()
+        self.play(Create(l1))
+        self.play(Create(l2), Create(l2x))
+        self.wait(2)
+
+class DerivativeOfError(MovingCameraScene):
+    def construct(self):
+        setup(self)
+
+        axis = Axes(
+            x_range=[0, 10, 1],
+            y_range=[0, 8, 1],
+            tips=False,
+            x_length = 5,
+            y_length = 5,
+            x_axis_config = {
+                "tick_size": 0.02,
+                "color": CBLUE,
+                "stroke_opacity": 0.7
+                },
+            y_axis_config = {
+                "tick_size": 0.02,
+                "color": CRED,
+                "stroke_opacity": 0.7,
+                },
+        )
+
+        labels = axis.get_axis_labels(
+            MathTex("w_2").scale(1).set_color(CBLUE),
+            CText("Error").scale(1.35).set_color(CRED)
+        )
+
+        stretch = 0.25
+        def func(x):
+            x -= 5
+            x *= stretch 
+            return 0.3 * (pow(x, 5) - 8 * pow(x, 3) + 10 * x) + 5
+
+        graph = axis.plot(func, x_range=[0, 10], use_smoothing=False, color=CRED, stroke_opacity=0.3)
+
+        line1 = axis.get_lines_to_point(
+                axis.c2p(3.9, func(3.9)),
+                line_config={"dashed_ratio": 1,
+                             "stroke_color":CWHITE,
+                             "stroke_opacity": 0.4
+                             }
+                )
+        d1 = Dot(axis.c2p(3.9, func(3.9)), radius=0.01, color=CWHITE)
+
+        d2 = Dot(axis.c2p(4.1, func(4.1)), radius=0.01, color=CWHITE)
+        line2 = axis.get_lines_to_point(
+                axis.c2p(4.1, func(4.1)),
+                line_config={"dashed_ratio": 1,
+                             "stroke_color":CWHITE,
+                             "stroke_opacity":0.4
+                             }
+                )
+
+        sub = VGroup(d1, d2)
+
+        self.wait()
+        self.play(Create(axis), Create(graph), Create(labels), Create(line1), Create(d1))
+        self.wait()
+
+        self.camera.frame.save_state()
+
+        self.play(
+                self.camera.frame.animate.set(width=sub.width*3).move_to(sub),
+                graph.animate.set_stroke_width(0.5),
+                line1.animate.set_stroke(width=0.5),
+            )
+        line2.set_stroke(width=0.5),
+
+        deri = VGroup(
+            VGroup(
+                MathTex(r"d"),
+                MathTex(r"\frac{\;\;\;\;\;}{\;\;\;\;\;}"),
+                MathTex(r"d", r"w_2")
+            ).arrange(DOWN, buff=0.1).set_color(CWHITE),
+            MathTex(r"E", color=CRED),
+        ).arrange(RIGHT, buff=0.01).scale(0.05).next_to(sub, RIGHT, buff=0.01)
+        deri[0][2][1].set_color(CBLUE)
+
+        self.wait()
+        self.play(Create(d2), ReplacementTransform(line1.copy(), line2))
+
+        arr1 = Arrow(d1, [d1.get_x(), d2.get_y(), 0], color=CRED, max_tip_length_to_length_ratio=0.2).scale(1)
+        arr2 = Arrow(d1, [d2.get_x(), d1.get_y(), 0], color=CBLUE, max_tip_length_to_length_ratio=0.2).scale(1)
+        arr1l = CText("change in Error", color=CRED).scale(0.04).next_to(arr1,LEFT, buff=0.0)
+        arr2l = CText("change in w2", color=CBLUE).scale(0.04).next_to(arr2, DOWN , buff=0.0)
+
+        self.play(Create(deri))
+        self.play(Create(arr1), Create(arr1l))
+        self.play(Create(arr2), Create(arr2l))
+
+        self.wait(2)
+
+        de = MathTex(r"dE", color=CRED).next_to(axis, LEFT)
+        de.move_to([de.get_center()[0], d1.get_y(), 0])
+        dw = MathTex(r"dw_2", color=CBLUE).next_to(axis, DOWN)
+        dw.move_to([d1.get_x(), dw.get_center()[1], 0])
+
+        self.add(de, dw)
+
+        self.play(
+                Restore(self.camera.frame), 
+                Transform(line2, line1.copy()), 
+                Transform(d2, d1.copy()), 
+                deri.animate.scale(10).shift(RIGHT),
+                graph.animate.set_stroke_width(4),
+                line2.animate.set_stroke_width(4),
+                FadeOut(arr1l),
+                FadeOut(arr2l)
+        )
+
+        self.wait(2)
+
+class ElementaryFunction(MovingCameraScene):
+    def construct(self):
+        setup(self)
+        self.camera.frame.shift(LEFT * 3)
+
+        ele_func = VGroup(
+            CText("Elementary Function Rules", color=CBLUE).scale(0.8),
+            MathTex(r"\texttt{Power function: } \; (x^n)' = nx^{n-1}", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Trig function: } \; sin'(x) = cos(x), \; cos'(x) = -sin(x)", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Exponential function: } \; (e^x)' = e^x", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Logarithmic function: } \; ln'(x) = \frac{1}{x}", color=CWHITE).scale(0.5),
+
+            CText("Comination of Functons Rules", color=CGREEN).scale(0.8),
+            MathTex(r"\texttt{Sum Rule: } \; (f(x) + g(x))' = f'(x) + g'(x)", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Product Rule: } \; (f(x)\cdot g(x))' = f'(x)g(x) + g'(x)f(x)", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Chain Rule: } \; \frac{d}{dx} f(g(x)) = \frac{df(g(x))}{dg(x)}\cdot \frac{dg(x)}{dx}", color=CWHITE).scale(0.5),
+        ).arrange(DOWN, aligned_edge=LEFT).shift(LEFT*6)
+
+        self.wait()
+        self.play(Create(ele_func))
+
+        sigma = MathTex(r"\sigma(x) =", color=CWHITE)
+        nomi = MathTex(r"1", color=CWHITE)
+        frac = MathTex(r"\frac{\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;}{\;}", color=CWHITE)
+        deno1 = MathTex(r"1", r"+", r"e^{-1}", color=CWHITE)
+        deno1[0].set_color(CRED)
+        deno1[1].set_color(CWHITE)
+        deno1[2].set_color(CGREEN)
+        lb = MathTex(r"(", color=CBLUE).set_opacity(0)
+        rb = MathTex(r")^{1}", color=CBLUE).set_opacity(0)
+        rb2 = MathTex(r")^{-1}", color=CBLUE)
+
+        f = VGroup(
+            sigma,
+            VGroup(
+                nomi,
+                frac,
+                VGroup(
+                    lb,
+                    deno1,
+                    rb,
+                ).arrange(RIGHT)
+            ).arrange(DOWN)
+        ).arrange(RIGHT)
+        rb.shift(UP*0.03)
+
+        self.wait()
+        self.play(Create(f))
+        self.remove(lb, rb)
+        rb.set_opacity(1)
+        lb.set_opacity(1)
+        self.wait()
+        self.play(Create(lb), Create(rb))
+        self.wait()
+        self.play(
+                FadeOut(nomi),
+                FadeOut(frac),
+                f[1][2].animate.next_to(sigma, RIGHT)
+                )
+        rb2.next_to(deno1, RIGHT)
+        rb2.shift(UP*0.03)
+        self.play(
+                Transform(f[1][2][2], rb2),
+                )
+        self.wait(1)
+
+        L1 = Panel(deno1[2], CGREEN)
+        L2 = Panel(deno1[0], CRED)
+        g2 = VGroup(lb, deno1, rb2).arrange(RIGHT).next_to(f[0], RIGHT)
+        L3 = Panel(g2, CBLUE)
+
+        l1 = Label("Exponential Function", L1, DOWN, color=CGREEN)
+        l2 = Label("Constant", L2, UP, color=CRED)
+        l3 = Label("Power Function", L3, UP, color=CBLUE).shift(RIGHT * 1)
+
+        self.play(Create(L1), Create(L2), Create(L3))
+        self.play(Create(l1), Create(l2), Create(l3))
+        self.wait(2)
+
+def derivative(func, variable, color=CBLUE, color2=CRED, color3=CWHITE, buff=0.2, partial=False):
+    if partial == True:
+        n = MathTex(r"\partial", color=color3)
+        d = MathTex(r"\partial", variable, color=color3)
+    else:
+        n = MathTex(r"d", color=color3)
+        d = MathTex(r"d", variable, color=color3)
+    d[1].set_color(color)
+    line = Line([0,0, 0], [d.get_width(),0 ,0], color=color3)
+    g1 = VGroup(n, line ,d).arrange(DOWN, buff=buff)
+    g2 = VGroup(g1, func).arrange(RIGHT, buff=buff)
+    return g2
+
+class SimplyGiveAnotherFunction(Scene):
+    def construct(self):
+        setup(self)
+
+        eq1 = derivative(
+            VGroup(
+                MathTex(r"E(...,", color=CRED),
+                MathTex(r"w_2", color=CBLUE),
+                MathTex(r", ...)", color=CRED), 
+            ).arrange(RIGHT), r"w_2"
+        )
+        eq2 = VGroup(
+                MathTex(r"= \;E'(...,", color=CGREEN),
+                MathTex(r"w_2", color=CBLUE),
+                MathTex(r", ...)", color=CGREEN), 
+            ).arrange(RIGHT)
+        g = VGroup(eq1, eq2).arrange(RIGHT)
+        self.wait(0.5)
+        self.add(eq1)
+        self.wait()
+        self.play(Create(eq2))
+        self.wait()
+
+        self.play(g.animate.move_to([0, 2, 0]))
+        self.wait()
+
+        e = CText("(Example from before)").scale(1).move_to([0, 1, 0])
+        eq3 = MathTex(r"\sigma(x) = \frac{1}{1+ e^{-x}}").scale(0.8)
+        eq32 = MathTex(r"\sigma(x) = (1+e^{-x})^{-1}", color=CBLUE).scale(0.8)
+
+        eq4f = MathTex(r"\Rightarrow \sigma '(x) =").scale(0.8)
+        g2 = VGroup(eq3, eq4f).arrange(DOWN).move_to([0, -1, 0])
+
+        eq41 = MathTex(r"\Rightarrow \sigma '(x) =-1(1+e^{-x})^{-2}", color=CRED).scale(0.8)
+        eq42 = MathTex(r"\Rightarrow \sigma '(x) =-1(1+e^{-x})^{-2} \cdot (1+e^{-x})'", color=CRED).scale(0.8)
+        eq43 = MathTex(r"\Rightarrow \sigma '(x) =-1(1+e^{-x})^{-2} \cdot (-e^{-x})", color=CRED).scale(0.8)
+        eq44 = MathTex(r"\Rightarrow \sigma '(x) =\frac{- (-e^{-x})}{(1+e^{-x})^2}", color=CRED).scale(0.8)
+        eq45 = MathTex(r"\Rightarrow \sigma '(x) =\frac{e^{-x}}{(1+e^{-x})^2}", color=CGREEN).scale(0.8)
+
+        VGroup(eq3, eq41).arrange(DOWN).move_to([0, -1, 0])
+        VGroup(eq3, eq42).arrange(DOWN).move_to([0, -1, 0])
+        VGroup(eq3, eq43).arrange(DOWN).move_to([0, -1, 0])
+        VGroup(eq3, eq44).arrange(DOWN).move_to([0, -1, 0])
+        VGroup(eq3, eq45).arrange(DOWN).move_to([0, -1, 0])
+
+        eq41l = Label("(Power Rule)", eq41, RIGHT, color=CWHITE).set_opacity(1)
+        eq42l = Label("(Chain Rule)", eq42, RIGHT, color=CWHITE).set_opacity(1)
+        eq43l = Label("(Exponential Rule)", eq43, RIGHT, color=CWHITE).set_opacity(1)
+        eq44l = Label("(Simplify)", eq44, RIGHT, color=CWHITE).set_opacity(1)
+        eq45l = Label("", eq45, RIGHT, color=CGREEN).set_opacity(0)
+
+        self.play(Create(e))
+        self.play(Create(eq3))
+        self.wait()
+        self.play(Transform(eq3, eq32))
+        self.wait()
+        self.play(Create(eq4f))
+
+        self.wait()
+        self.play(ReplacementTransform(eq4f, eq41))
+        self.play(Create(eq41l))
+        self.wait()
+        self.play(Transform(eq41, eq42), Transform(eq41l, eq42l))
+        self.wait()
+        self.play(Transform(eq41, eq43), Transform(eq41l, eq43l))
+        self.wait()
+        self.play(Transform(eq41, eq44), Transform(eq41l, eq44l))
+        self.wait()
+        self.play(Transform(eq41, eq45), Transform(eq41l, eq45l))
+        self.wait()
+
+        eq5 = derivative(MathTex(r"E", color=CRED), "w_2")
+        eq52 = derivative(MathTex(r"E", color=CRED), "w_2", partial=True)
+        eq53 = derivative(MathTex(r"E(..., w_2, ...)", color=CRED), "w_2", partial=True)
+
+        eq5l = Label("(partial derivative)", eq52, LEFT, color=CWHITE)
+
+        self.play(
+                FadeOut(eq41), FadeOut(e),
+                FadeOut(eq3),
+                FadeOut(eq2),
+                Transform(eq1, eq5),
+                )
+        self.wait()
+        self.play(Transform(eq1, eq52))
+        self.play(Create(eq5l))
+        self.wait()
+        self.play(Transform(eq1, eq53), eq5l.animate.next_to(eq53, LEFT))
+        self.wait(2)
+
+class ToUpdateAll(Scene):
+    def construct(self):
+        setup(self)
+
+        lb = LB(n=10)
+        rb = RB(n=10)
+
+        g = VGroup(lb.copy(),
+            VGroup(
+                derivative(MathTex(r"E", color=CRED), "w_1", color="#00AFB9",color3="#00AFB9", partial=True),
+                derivative(MathTex(r"E", color=CRED), "w_2", color="#12BBA4",color3="#12BBA4",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "w_3", color="#25C78F",color3="#25C78F",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "w_{...}", color="#37D279", color3="#37D279",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "w_n", color="#49DE64",color3="#49DE64",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_1", color="#FDFCDC",color3="#FDFCDC",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_2", color="#FAD9BF",color3="#FAD9BF",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_3", color="#F7B7A2",color3="#F7B7A2",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_{...}", color="#F39484",color3="#F39484",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_n", color="#F07167",color3="#F07167",  partial=True),
+            ).scale(0.4).arrange(DOWN, buff=0.1),
+            rb.copy()
+        ).arrange(RIGHT, buff=0.1)
+
+        n = MathTex(r"- \eta" ,color=CGREEN).shift(RIGHT)
+
+        old_g= VGroup(lb.copy().set_color(CBLUE),
+            VGroup(
+                MathTex(r"w_{\texttt{old1}}", color="#00AFB9"),
+                MathTex(r"w_{\texttt{old2}", color="#12BBA4"),
+                MathTex(r"w_{\texttt{old3}", color="#25C78F"),
+                MathTex(r"w_{...}", color="#37D279"),
+                MathTex(r"w_{\texttt{oldn}", color="#49DE64"),
+                MathTex(r"b_{\texttt{old1}", color="#FDFCDC"),
+                MathTex(r"b_{\texttt{old2}", color="#FAD9BF"),
+                MathTex(r"b_{\texttt{old3}", color="#F7B7A2"),
+                MathTex(r"b_{...}", color="#F39484"),
+                MathTex(r"b_{\texttt{oldn}", color="#F07167"),
+            ).scale(0.5).arrange(DOWN, buff=0.4),
+            rb.copy().set_color(CBLUE)
+        ).arrange(RIGHT, buff=0.1)
+
+        new_g= VGroup(lb.copy().set_color(CGREEN),
+            VGroup(
+                MathTex(r"w_{\texttt{new1}}", color="#00AFB9"),
+                MathTex(r"w_{\texttt{new2}", color="#12BBA4"),
+                MathTex(r"w_{\texttt{new3}", color="#25C78F"),
+                MathTex(r"w_{...}", color="#37D279"),
+                MathTex(r"w_{\texttt{newn}", color="#49DE64"),
+                MathTex(r"b_{\texttt{new1}", color="#FDFCDC"),
+                MathTex(r"b_{\texttt{new2}", color="#FAD9BF"),
+                MathTex(r"b_{\texttt{new3}", color="#F7B7A2"),
+                MathTex(r"b_{...}", color="#F39484"),
+                MathTex(r"b_{\texttt{newn}", color="#F07167"),
+            ).scale(0.5).arrange(DOWN, buff=0.4),
+            rb.copy().set_color(CGREEN)
+        ).arrange(RIGHT, buff=0.1)
+
+        old_g.next_to(n, LEFT)
+        equal = MathTex(r"=", color=CGREEN).next_to(old_g, LEFT)
+        new_g.next_to(equal, LEFT)
+
+        eq0 = derivative(MathTex(r"E(..., w_2, ...)", color=CRED), "w_2", partial=True)
+        eq1 = g[1][1].copy()
+
+        self.add(eq0)
+        self.wait()
+        self.play(Transform(eq0, eq1))
+        self.wait()
+        self.play(Create(g))
+        self.remove(eq0)
+        self.wait()
+        self.play(Create(n), g.animate.next_to(n, RIGHT))
+        self.wait()
+        self.play(Create(old_g))
+        self.wait()
+        self.play(Create(equal), Create(new_g))
+        self.wait()
+
+class GradientDescent(Scene):
+    def construct(self):
+        setup(self)
+
+        lb = LB(n=10)
+        rb = RB(n=10)
+
+        g = VGroup(lb.copy(),
+            VGroup(
+                derivative(MathTex(r"E", color=CRED), "w_1", color="#00AFB9",color3="#00AFB9", partial=True),
+                derivative(MathTex(r"E", color=CRED), "w_2", color="#12BBA4",color3="#12BBA4",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "w_3", color="#25C78F",color3="#25C78F",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "w_{...}", color="#37D279", color3="#37D279",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "w_n", color="#49DE64",color3="#49DE64",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_1", color="#FDFCDC",color3="#FDFCDC",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_2", color="#FAD9BF",color3="#FAD9BF",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_3", color="#F7B7A2",color3="#F7B7A2",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_{...}", color="#F39484",color3="#F39484",  partial=True),
+                derivative(MathTex(r"E", color=CRED), "b_n", color="#F07167",color3="#F07167",  partial=True),
+            ).scale(0.4).arrange(DOWN, buff=0.1),
+            rb.copy()
+        ).arrange(RIGHT, buff=0.1)
+
+        n = MathTex(r"- \eta" ,color=CGREEN).shift(RIGHT)
+        g.next_to(n, RIGHT)
+
+        self.add(g)
+
+        self.wait()
+
+        self.play(g.animate.move_to(ORIGIN))
+        self.wait()
+
+        gra = VGroup(
+            MathTex(r"\nabla", color=CBLUE),
+            MathTex(r"E", color=CRED)
+        ).arrange(RIGHT, buff=0.1)
+        gra2 = VGroup(
+            MathTex(r"\nabla_{\theta}", color=CBLUE),
+            MathTex(r"E", color=CRED)
+        ).arrange(RIGHT, buff=0.1)
+
+
+        l1 = Label("Gradient of the Error Function (For every input)", gra[0], DOWN, color=CWHITE)
+        l2 = Label("Gradient of the Error Function (For every model parameter)", gra[0], DOWN, color=CBLUE)
+        
+        self.play(
+            FadeOut(g[0]),
+            FadeOut(g[2]),
+            Transform(g[1], gra),
+        )
+        self.play(
+            Create(l1),
+        )
+        self.wait()
+        self.play(
+            Transform(g[1], gra2),
+            Transform(l1, l2)
+        )
+        self.wait()
+
+        grad = VGroup(
+            MathTex(r"\theta_{\texttt{new}} = ", color=CWHITE),
+            MathTex(r"\theta_{\texttt{old}}", color=CBLUE),
+            MathTex(r"- \nabla_{\theta} E", color=CRED)
+        ).arrange(RIGHT, buff=0.08)
+
+        self.play(
+            FadeOut(l1)
+        )
+        self.play(Transform(g[1], grad[2]))
+        self.play(Create(grad[0]), Create(grad[1]))
+
+        l3 = CText("Gradient Descent", color=CWHITE).scale(2).shift(UP*1.5)
+
+        self.wait()
+        self.play(
+            Create(l3)
+        )
+
+        l4 = Label("Directions for each of the parameters where the error is decreasing", grad[2], DOWN, color=CRED)
+        self.wait()
+        self.play(Create(l4))
+
+        self.wait(2)
+
+class AmongChainRule(Scene):
+    def construct(self):
+        setup(self)
+
+        rule = VGroup(
+            CText("Elementary Function Rules", color=CBLUE).scale(0.8),
+            MathTex(r"\texttt{Power function: } \; (x^n)' = nx^{n-1}", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Trig function: } \; sin'(x) = cos(x), \; cos'(x) = -sin(x)", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Exponential function: } \; (e^x)' = e^x", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Logarithmic function: } \; ln'(x) = \frac{1}{x}", color=CWHITE).scale(0.5),
+
+            CText("Comination of Functons Rules", color=CGREEN).scale(0.8),
+            MathTex(r"\texttt{Sum Rule: } \; (f(x) + g(x))' = f'(x) + g'(x)", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Product Rule: } \; (f(x)\cdot g(x))' = f'(x)g(x) + g'(x)f(x)", color=CWHITE).scale(0.5),
+            MathTex(r"\texttt{Chain Rule: } \; \frac{d}{dx} f(g(x)) = \frac{df(g(x))}{dg(x)}\cdot \frac{dg(x)}{dx}", color=CWHITE).scale(0.5),
+        ).arrange(DOWN, aligned_edge=LEFT)
+
+        self.wait()
+        self.play(Create(rule))
+        self.wait()
+        ch = rule[8].copy()
+        l = rule[5].copy()
+        self.add(ch, l)
+        self.play(FadeOut(rule))
+        self.play(ch.animate.move_to(ORIGIN).scale(1.5), l.animate.move_to(ORIGIN+UP*1.3))
+
+        self.wait(2)
+       
+class WhyChainRule(Scene):
+    def construct(self):
+        setup(self)
+
+        f = TextBox("f(x)", color=CBLUE)
+
+        x = Label("x", f, LEFT, color=CWHITE)
+        y = Label("y", f, RIGHT, color=CBLUE2, oppo=True)
+        y2 = Label(MathTex(r"\frac{dy}{dx}").scale(0.7), f, RIGHT, color=CBLUE2, oppo=False)
+
+        c_arr = CurvedArrow(y2[1].get_center()+UP*0.5, x[1].get_center()+UP*0.2, color=CBLUE)
+
+        CreateBox(self, f)
+        self.play(Create(x), Create(y))
+        self.wait()
+        self.play(Transform(y, y2))
+        self.wait()
+        self.play(Create(c_arr), x[1].animate.scale(2).set_color(CGREEN))
+        self.play(x[1].animate.scale(0.5).set_color(CWHITE))
+        self.wait()
+
+        e_f = TextBox(MathTex(r"E(y, \hat{y})"), color=CRED) 
+
+        self.play(
+            FadeOut(x), FadeOut(y), FadeOut(c_arr),
+            Transform(f, e_f)
+        )
+
+        g1 = VGroup(
+            TextBox("Sum\nFunction\n(wx + b)", color=CWHITE, text_color=CBLACK),
+            CArrow(LEFT, color=CWHITE).scale(0.6),
+            TextBox("Activation\nFunction\n(output)", color=CBLUE),
+            CArrow(LEFT, color=CWHITE).scale(0.6),
+            TextBox("Error\nFunction\n(MSE)", color=CRED),
+            CArrow(LEFT, color=CWHITE).scale(0.6),
+            CText("Error", color=CRED),
+        ).scale(0.8).arrange(RIGHT)
+
+        p = Label("Parameters (weights and biases)", g1[0], UP, color=CWHITE).scale(0.8)
+        t = Label("Target", g1[4], UP, color=CGREEN).scale(0.8)
+
+        pre_arr = CArrow(LEFT, color=CWHITE).scale(0.8).next_to(g1, LEFT)
+        pre = TextBox("Activation\nFunction\n(hidden)", color=CBLUE).scale(0.8).set_opacity(0.5).next_to(pre_arr, LEFT)
+        pre_arr2 = CArrow(LEFT, color=CWHITE).scale(0.8).next_to(pre, LEFT).set_opacity(0.5)
+
+        # self.add(g1, p, t, pre_arr, pre, pre_arr2)
+        self.wait()
+        self.play(Transform(f, g1[4]))
+        self.play(Create(t))
+        CreateBox(self,g1[2])
+        self.play(Create(g1[5]), Create(g1[6]), Create(g1[3]))
+        CreateBox(self,g1[0])
+        self.play(Create(g1[1]))
+        self.play(Create(p), run_time=1.5)
+        CreateBox(self,pre)
+        self.play(Create(pre_arr), Create(pre_arr2))
+        self.wait(2)
+ 
+class CompositionOfFunction(Scene):
+    def construct(self):
+        setup(self)
+
+        g1 = VGroup(
+            TextBox("Sum\nFunction\n(wx + b)", color=CWHITE, text_color=CBLACK),
+            CArrow(LEFT, color=CWHITE).scale(0.6),
+            TextBox("Activation\nFunction\n(output)", color=CBLUE),
+            CArrow(LEFT, color=CWHITE).scale(0.6),
+            TextBox("Error\nFunction\n(MSE)", color=CRED),
+            CArrow(LEFT, color=CWHITE).scale(0.6),
+            CText("Error", color=CRED),
+        ).scale(0.8).arrange(RIGHT)
+
+        p = Label("Parameters (weights and biases)", g1[0], UP, color=CWHITE).scale(0.8)
+        t = Label("Target", g1[4], UP, color=CGREEN).scale(0.8)
+
+        pre_arr = CArrow(LEFT, color=CWHITE).scale(0.8).next_to(g1, LEFT)
+        pre = TextBox("Activation\nFunction\n(hidden)", color=CBLUE).scale(0.8).set_opacity(0.5).next_to(pre_arr, LEFT)
+        pre_arr2 = CArrow(LEFT, color=CWHITE).scale(0.8).next_to(pre, LEFT).set_opacity(0.5)
+
+        g2 = VGroup(g1, p, t, pre_arr, pre, pre_arr2)
+        self.add(g2)
+        self.wait()
+        self.play(g2.animate.shift(UP*1.5))
+        self.wait(2)
+
+        com = CText("Composition of Functions: f(g(x))", color=CWHITE).scale(1.5)
+
+        self.play(Create(com))
+        self.wait()
+
+        ff = VGroup(
+            MathTex(r"MSE(", color=CRED),
+            MathTex(r"\sigma_{\texttt{out1}}(", color=CBLUE),
+            MathTex(r"\texttt{Sum}(\sigma_{\texttt{h5}}(...), w_{\texttt{out1}}, b_{\texttt{out1}})", color=CWHITE),
+            MathTex(r"),...", color=CBLUE),
+            MathTex(r",\hat{y}", color=CGREEN),
+            MathTex(r")", color=CRED),
+        ).scale(0.8).arrange(RIGHT, buff=0.1).shift(DOWN)
+
+        self.play(Create(ff))
+        self.wait()
+
+class Backpropagation(Scene):
+    def construct(self):
+        setup(self)
 
         
+
