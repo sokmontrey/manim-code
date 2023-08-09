@@ -68,9 +68,9 @@ def ArrowFrom(obj, direction, color=CWHITE):
     return arr
 
 def Label(text, obj, direction, color=CWHITE, text_size=FONT_SIZE, oppo=False):
-    arr = CArrow(direction, color, oppo).next_to(obj, direction, 0.2)
+    arr = CArrow(direction, color, oppo).scale(0.8).next_to(obj, direction, 0.1)
     if isinstance(text, str):
-        t = CText(text, color, text_size).next_to(arr, direction) 
+        t = CText(text, color, text_size).next_to(arr, direction, 0.1) 
     else:
         t = text.set_color(color).next_to(arr, direction) 
 
@@ -1566,7 +1566,7 @@ class ElementaryFunction(MovingCameraScene):
         sigma = MathTex(r"\sigma(x) =", color=CWHITE)
         nomi = MathTex(r"1", color=CWHITE)
         frac = MathTex(r"\frac{\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;}{\;}", color=CWHITE)
-        deno1 = MathTex(r"1", r"+", r"e^{-1}", color=CWHITE)
+        deno1 = MathTex(r"1", r"+", r"e^{-x}", color=CWHITE)
         deno1[0].set_color(CRED)
         deno1[1].set_color(CWHITE)
         deno1[2].set_color(CGREEN)
@@ -1588,8 +1588,10 @@ class ElementaryFunction(MovingCameraScene):
         ).arrange(RIGHT)
         rb.shift(UP*0.03)
 
+        ex = CText("Example", CBLUE).next_to(f, UP*3)
+
         self.wait()
-        self.play(Create(f))
+        self.play(Create(f), Create(ex))
         self.remove(lb, rb)
         rb.set_opacity(1)
         lb.set_opacity(1)
@@ -1866,13 +1868,14 @@ class GradientDescent(Scene):
         grad = VGroup(
             MathTex(r"\theta_{\texttt{new}} = ", color=CWHITE),
             MathTex(r"\theta_{\texttt{old}}", color=CBLUE),
-            MathTex(r"- \nabla_{\theta} E", color=CRED)
+            MathTex(r"-\eta", color=CGREEN),
+            MathTex(r"\nabla_{\theta} E", color=CRED)
         ).arrange(RIGHT, buff=0.08)
 
         self.play(
             FadeOut(l1)
         )
-        self.play(Transform(g[1], grad[2]))
+        self.play(Transform(g[1], VGroup(grad[2], grad[3])))
         self.play(Create(grad[0]), Create(grad[1]))
 
         l3 = CText("Gradient Descent", color=CWHITE).scale(2).shift(UP*1.5)
@@ -1882,7 +1885,7 @@ class GradientDescent(Scene):
             Create(l3)
         )
 
-        l4 = Label("Directions for each of the parameters where the error is decreasing", grad[2], DOWN, color=CRED)
+        l4 = Label("Directions for each of the parameters where the error is decreasing", grad[3], DOWN, color=CRED)
         self.wait()
         self.play(Create(l4))
 
@@ -2022,5 +2025,193 @@ class Backpropagation(Scene):
     def construct(self):
         setup(self)
 
+        f = VGroup(
+            MathTex(r"\texttt{...}", color=CWHITE).set_opacity(0.5),
+            CArrow(LEFT, color=CBLUE2),
+            MathTex(r"x\cdot w + b", color=CWHITE),
+            CArrow(LEFT, color=CBLUE2),
+            MathTex(r"\sigma_{h}(x)", color=CWHITE),
+            CArrow(LEFT, color=CBLUE2),
+            MathTex(r"x\cdot w + b", color=CWHITE),
+            CArrow(LEFT, color=CBLUE2),
+            MathTex(r"\sigma_{o}(x)", color=CWHITE),
+            CArrow(LEFT, color=CBLUE2),
+            MathTex(r"E(y, \hat{y})", color=CRED),
+            CArrow(LEFT, color=CBLUE2),
+            MathTex(r"\texttt{Error}", color=CRED),
+        ).scale(0.5).arrange(RIGHT).shift(UP*1.5)
+
+        fl1 = Label("w4", f[2], UP, color=CWHITE).scale(0.8)
+        fl1[0].set_color(CBLUE)
+        fl12 = Label("b4", f[2], DOWN, color=CWHITE).scale(0.8)
+        fl12[0].set_color(CBLUE)
+        fl2 = Label("w5", f[6], UP, color=CWHITE).scale(0.8)
+        fl2[0].set_color(CBLUE)
+        fl22 = Label("b5", f[6], DOWN, color=CWHITE).scale(0.8)
+        fl22[0].set_color(CBLUE)
+        fl3 = Label("t", f[10], UP, color=CGREEN).scale(0.8).shift(RIGHT*0.1)
+        fl = CText("Forward Propagation", color=CBLUE).shift(UP*3)
+
+        bl = CText("Backward Propagation", color=CRED)
+
+        b = VGroup(
+            MathTex(r"\nabla_{\theta} \texttt{Error}", color=CRED).scale(0.5),
+            MathTex(r"=", color=CRED).scale(0.5),
+            VGroup(
+                MathTex(r"\frac{\mathrm{d} E(y, \hat{y})}{\mathrm{d} y}", color=CWHITE),
+                CArrow(RIGHT, color=CRED),
+                MathTex(r"\frac{\mathrm{d} \sigma_{o}(x)}{\mathrm{d} x}", color=CWHITE),
+                CArrow(RIGHT, color=CRED),
+                MathTex(r"\frac{\partial (x\cdot w + b)}{\partial x}", color=CWHITE),
+                CArrow(RIGHT, color=CRED),
+                MathTex(r"\frac{\mathrm{d} \sigma_{h}(x)}{\mathrm{d} x}", color=CWHITE),
+                CArrow(RIGHT, color=CRED),
+                MathTex(r"\frac{\partial (x\cdot w + b)}{\partial x}", color=CWHITE),
+                CArrow(RIGHT, color=CRED),
+                MathTex(r"\texttt{...}", color=CWHITE),
+            ).scale(0.5).arrange(LEFT)
+        ).arrange(LEFT).shift(DOWN*2)
+
+        bl1 = Label(
+            MathTex(r"\frac{\partial (x\cdot w + b)}{\partial w}", color=CWHITE),
+            b[2][4],
+            UP,
+            oppo=True
+        ).scale(0.4).shift(DOWN * 0.5)
+        bl1[0] = Arrow(b[2][2], bl1[1], color=CRED, stroke_width=1.5, max_tip_length_to_length_ratio=0.2)
+        bl12 = Label(
+            MathTex(r"\frac{\partial (x\cdot w + b)}{\partial b}", color=CWHITE),
+            b[2][4],
+            DOWN,
+            oppo=True
+        ).scale(0.4).shift(UP * 0.5)
+        bl12[0] = Arrow(b[2][2], bl12[1], color=CRED, stroke_width=1.5, max_tip_length_to_length_ratio=0.2)
+
+        bl2 = Label(
+            MathTex(r"\frac{\partial (x\cdot w + b)}{\partial w}", color=CWHITE),
+            b[2][8],
+            UP,
+            oppo=True
+        ).scale(0.4).shift(DOWN * 0.5)
+        bl2[0] = Arrow(b[2][6], bl2[1], color=CRED, stroke_width=1.5, max_tip_length_to_length_ratio=0.2)
+        bl22 = Label(
+            MathTex(r"\frac{\partial (x\cdot w + b)}{\partial b}", color=CWHITE),
+            b[2][8],
+            DOWN,
+            oppo=True
+        ).scale(0.4).shift(UP * 0.5)
+        bl22[0] = Arrow(b[2][6], bl22[1], color=CRED, stroke_width=1.5, max_tip_length_to_length_ratio=0.2)
         
+        self.wait()
+
+        t1=0.1
+        self.play(Create(fl), run_time=t1)
+        self.wait()
+
+        self.play(Create(f[0]), Create(f[1]), Create(f[2]), run_time=t1)
+
+        self.play(Create(fl1[1]), Create(fl12[1]), run_time=t1)
+        self.play(Create(fl1[0]), Create(fl12[0]), run_time=t1)
+        self.play(Create(f[3]), run_time=t1)
+
+        self.play(Create(f[4]), run_time=t1)
+        self.play(Create(f[5]), run_time=t1)
+        self.play(Create(f[6]), run_time=t1)
+
+        self.play(Create(fl2[1]), Create(fl22[1]), run_time=t1)
+        self.play(Create(fl2[0]), Create(fl22[0]), run_time=t1)
+        self.play(Create(f[7]), run_time=t1)
+        self.play(Create(f[8]), run_time=t1)
+        self.play(Create(f[9]), run_time=t1)
+        self.play(Create(f[10]), run_time=t1)
+        self.play(Create(fl3), run_time=t1)
+        self.play(Create(f[11]), run_time=t1)
+        self.play(Create(f[12]), run_time=t1)
+        self.wait()
+
+        t2 = 0.4
+        self.play(Create(b[0]), Create(b[1]), run_time=t2)
+        self.wait()
+        self.play(Create(b[2][0]),run_time=t2)
+        self.play(Create(b[2][1]),run_time=t2)
+        self.play(Create(b[2][2]),run_time=t2)
+        self.play(Create(b[2][3]),run_time=t2)
+        self.play(Create(b[2][4]),Create(bl1), Create(bl12), run_time=t2)
+        self.play(Create(b[2][5]),run_time=t2)
+        self.play(Create(b[2][6]),run_time=t2)
+        self.play(Create(b[2][7]),run_time=t2)
+        self.play(Create(b[2][8]),Create(bl2), Create(bl22), run_time=t2)
+        self.play(Create(b[2][9]),run_time=t2)
+        self.play(Create(b[2][10]),run_time=t2)
+        self.wait(2)
+        self.play(Create(bl))
+        self.wait(2)
+
+        # self.add(f, fl1, fl12, fl2, fl22, fl3, fl, bl, b, bl1, bl12, bl2, bl22)
+        
+class Tensor(Scene):
+    def construct(self):
+        self.camera.background_color = CWHITE
+
+        n_v = MathTex(r"\begin{bmatrix} x_1 \\ x_2 \end{bmatrix}", color=CBLUE)
+        b_v = MathTex(r"\begin{bmatrix} b_1 \\ b_2 \\b_3 \end{bmatrix}", color=CBLUE)
+        v_g = VGroup(n_v, b_v).arrange(RIGHT)
+        l1 = Label("Node Vector", n_v, UP, color=CBLUE)
+        l2 = Label("Bias Vector", b_v, DOWN, color=CBLUE)
+        v_g2 = VGroup(v_g, l1, l2)
+
+        w_m = MathTex(r"\begin{bmatrix} w_{11} & w_{12} \\ w_{21} & w_{22} \\ w_{31} & w_{32} \\ \end{bmatrix}", color=CRED)
+        l3 = Label("Weight Matrix", w_m, DOWN, color=CRED)
+        m_g = VGroup(w_m, l3).shift(RIGHT*2)
+
+        side_note = VGroup(
+                CText("Scalar: 0D Tensor (A number)"),
+                CText("Vector: 1D Tensor (An array of numbers)"),
+                CText("Matrix: 2D Tensor (An array of vectors)"),
+                ).set_color(CBLACK).set_opacity(0.7).arrange(DOWN, aligned_edge=LEFT).shift(UP * 3 + LEFT * 3.8)
+        
+        self.wait()
+        self.play(Create(v_g2))
+        self.wait()
+        self.play(v_g2.animate.shift(LEFT*2), Create(m_g))
+        self.wait()
+
+        plus = MathTex(r"+", color=CBLUE)
+        cdot = MathTex(r"\cdot", color=CRED)
+        gg = VGroup(w_m.copy(), cdot, n_v.copy(), plus, b_v.copy()).arrange(RIGHT)
+        l4 = Label("Matrix Multiplication", gg[1], UP, color=CRED).shift(UP)
+        l5 = Label("Vector Addition", gg[3], DOWN, color=CBLUE).shift(DOWN)
+
+        self.play(
+                FadeOut(l1), FadeOut(l2), FadeOut(l3)
+                )
+        self.play(
+                w_m.animate.move_to(gg[0].get_center()),
+                n_v.animate.move_to(gg[2].get_center()),
+                b_v.animate.move_to(gg[4].get_center()),
+                  )
+        self.play(Create(cdot), Create(plus))
+        self.play(Create(l4), Create(l5))
+        self.wait()
+
+        re = MathTex(r"=\begin{bmatrix} w_{11}x_1 + w_{12}x_2 + b_1 \\ w_{21}x_1 + w_{22}x_2 + b_2 \\ w_{31}x_1 + w_{32}x_2 + b_3 \end{bmatrix}")
+        re.set_color(CBLUE).set_opacity(0.8)
+        re.shift(DOWN)
+        
+
+        gg2 = VGroup(gg.copy(), re).arrange(RIGHT)
+        l6 = Label("Node Vector (Next Layer)", re, UP, color=CBLUE)
+
+        self.play(FadeOut(l4), FadeOut(l5), 
+                  w_m.animate.move_to(gg2[0][0].get_center()),
+                  cdot.animate.move_to(gg2[0][1].get_center()),
+                  n_v.animate.move_to(gg2[0][2].get_center()),
+                  plus.animate.move_to(gg2[0][3].get_center()),
+                  b_v.animate.move_to(gg2[0][4].get_center()),
+                  )
+        self.wait()
+
+        self.play(Create(re))
+        self.play(Create(l6))
+        self.wait()
 
